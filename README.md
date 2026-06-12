@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# Task Manager
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A simple task management app built with **React + TypeScript + Vite**. It loads tasks from a mock API and lets you add, complete, delete, and filter them.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **List tasks** loaded from the API
+- **Add a task** with form validation (required, at least 3 characters)
+- **Toggle status** – mark a task done / undone
+- **Delete a task**
+- **Filter** – All / Pending / Completed
+- Loading, error (with retry), and empty states
+- Accessible and responsive (mobile, tablet, desktop)
 
-## React Compiler
+## Getting started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Requires Node 18+.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install      # install dependencies
+npm run dev      # start dev server at http://localhost:5173
+npm test         # run unit tests
+npm run build    # type-check + production build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## API
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Data comes from the free **[JSONPlaceholder](https://jsonplaceholder.typicode.com/)** mock API.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+| Action            | Method | Endpoint           |
+| ----------------- | ------ | ------------------ |
+| List tasks        | GET    | `/todos?_limit=10` |
+| Add a task        | POST   | `/todos`           |
+| Toggle completion | PATCH  | `/todos/:id`       |
+| Delete a task     | DELETE | `/todos/:id`       |
+
+> **Note:** the API is read-only. `GET` returns real data, but `POST` / `PATCH` /
+> `DELETE` only return a fake success and don't persist. The app updates its local
+> state immediately and fires the request in the background, so changes won't
+> survive a page refresh.
+
+## Architecture
+
+Small and flat. State and data fetching live in one custom hook (`useTasks`),
+which the `App` component reads from and passes down to two presentational
+components.
+
 ```
+src/
+├── api.ts                # fetch functions for the /todos endpoints
+├── types.ts              # Task and Filter types
+├── validation.ts         # task title validation
+├── useTasks.ts           # all task state + actions (useState based)
+├── components/
+│   ├── TaskForm.tsx      # add-task input with validation
+│   └── TaskItem.tsx      # a single task row
+├── App.tsx               # layout, filters, and the loading/error/empty states
+├── index.css             # all styles
+└── main.tsx              # entry point
+```
+
+- **`useTasks`** holds the tasks, the active filter, and loading/error flags, and
+  exposes `addTask`, `toggleTask`, `deleteTask`, and `reload`.
+- **`api.ts`** is the only place that calls `fetch`.
+- **Components** are presentational – they receive data and callbacks as props.
+
+## Tests
+
+`src/App.test.tsx` covers title validation, loading tasks, adding a task, and
+filtering — using Vitest + React Testing Library with the API module mocked.
